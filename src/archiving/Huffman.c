@@ -271,6 +271,7 @@ huffman_tree_convert_bits_to_letter
     return letter;
 }
 
+// TODO переписать на битсет
 darray *
 huffman_tree_insert
 (
@@ -337,7 +338,7 @@ huffman_tree_insert
     return bits;
 }
 
-darray *
+bitset *
 huffman_tree_encode
 (
     const dstring *bytes
@@ -345,7 +346,7 @@ huffman_tree_encode
 {
     huffman_tree *tree = huffman_tree_create();
 
-    darray *result = darray_create(sizeof(bool));
+    bitset *result = bitset_create();
 
     for (size_t i = 0; i < dstring_length((dstring *)bytes); ++i)
     {
@@ -359,7 +360,8 @@ huffman_tree_encode
             darray_iterator_advance(it, right, 1)
         )
         {
-            darray_append(result, darray_iterator_get_value(it, bool));
+            bool curr_bit = darray_iterator_get_value(it, bool);
+            bitset_append(result, curr_bit == true ? true : false);
         }
     }
 
@@ -391,7 +393,7 @@ huffman_tree_get_son_by_parent
 dstring *
 huffman_tree_decode
 (
-    const darray *bits
+    const bitset *bits
 )
 {
     huffman_tree *tree = huffman_tree_create();
@@ -401,7 +403,8 @@ huffman_tree_decode
     darray_iterator nodes_it = darray_begin(tree->nodes);
     darray_iterator code_it = darray_begin((darray *)bits);
 
-    while (darray_iterator_compare(code_it, darray_end((darray *)bits)) != 0)
+    for (size_t i = 0; i < bitset_size((bitset *)bits); )
+    //while (darray_iterator_compare(code_it, darray_end((darray *)bits)) != 0)
     {
         huffman_tree_node *nodes_it_value = darray_iterator_get_value(nodes_it, huffman_tree_node *);
         if (nodes_it_value->left_child == NULL && nodes_it_value->right_child == NULL)
@@ -415,9 +418,9 @@ huffman_tree_decode
 
                 for (size_t i = 0; i < BITS_IN_BYTE; ++i)
                 {
-                    bool bit = darray_iterator_get_value(code_it, bool);
+                    bool bit = bitset_at((bitset *)bits, i);
                     darray_append(code_of_letter, bit);
-                    darray_iterator_advance(code_it, 1, right);
+                    ++i;
                 }
 
                 // if (code_it > code.end()) {
@@ -444,7 +447,7 @@ huffman_tree_decode
         else
         {
             nodes_it = huffman_tree_get_son_by_parent(nodes_it, darray_iterator_get_value(code_it, bool));
-            darray_iterator_advance(code_it, 1, right);
+            ++i;
         }
     }
 

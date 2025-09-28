@@ -3,11 +3,12 @@
 
 #include <darray.h>
 #include <dstring.h>
+#include <bitset.h>
 
 /**
- * Кодирует последовательность байт BYTES и возвращает последовательность бит darray<bool>
+ * Кодирует последовательность байт BYTES и возвращает последовательность бит bitset
  */
-darray *
+bitset *
 huffman_tree_encode
 (
     const dstring *bytes
@@ -19,7 +20,7 @@ huffman_tree_encode
 dstring *
 huffman_tree_decode
 (
-    const darray *bits
+    const bitset *bits
 );
 
 #endif

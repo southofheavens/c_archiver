@@ -3,8 +3,9 @@
 
 #include <dstring.h>
 #include <darray.h>
+#include <bitset.h>
 
-darray *
+bitset *
 compress
 (
     dstring *bytes
@@ -13,7 +14,15 @@ compress
 dstring *
 unpack
 (
-    darray *bits
+    bitset *bits
+);
+
+// нужно убрать из этого файла
+
+dstring *
+bitset_to_string
+(
+    bitset *bits
 );
 
 #endif

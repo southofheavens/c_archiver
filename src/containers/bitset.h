@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 
 typedef struct bitset bitset;
 
@@ -37,7 +38,7 @@ bitset_append
 /**
  * 
  */
-uint8_t *
+const int8_t *
 bitset_data
 (
     bitset *bits
@@ -50,6 +51,16 @@ size_t
 bitset_size
 (
     bitset *bits
+);
+
+/**
+ * 
+ */
+bool
+bitset_at
+(
+    bitset *bits,
+    size_t  index
 );
 
 #endif

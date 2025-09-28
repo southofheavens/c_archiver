@@ -75,7 +75,7 @@ lz77_encode
     {
         lz77_token another_token = lz77_search_for_occurrence(buffer, dstr, &i);
 
-        printf("%hu - %hu - %c - %d\n", another_token.shift, another_token.length, another_token.letter, another_token.eom);
+        // printf("%hu - %hu - %c - %d\n", another_token.shift, another_token.length, another_token.letter, another_token.eom);
 
         darray_append(tokens, another_token);
 
