@@ -6,8 +6,7 @@
 #include <errno.h>
 #include <string.h>
 #include <stdbool.h>
-
-#define BITS_IN_A_BYTE 8
+#include <limits.h>
 
 typedef struct bitset
 {
@@ -57,9 +56,9 @@ bitset_append
     bool    bit
 )
 {
-    if (bits->size != 0 && bits->size % BITS_IN_A_BYTE == 0)
+    if (bits->size != 0 && bits->size % CHAR_BIT == 0)
     {
-        bits->data = (int8_t *)realloc(bits->data, bits->size / BITS_IN_A_BYTE + sizeof(int8_t));
+        bits->data = (int8_t *)realloc(bits->data, bits->size / CHAR_BIT + sizeof(int8_t));
         if (bits->data == NULL)
         {
             fprintf(stderr, "%s\n", strerror(errno));
@@ -69,8 +68,8 @@ bitset_append
     
     if (bit)
     {
-        int8_t *curr_block = bits->data + bits->size / BITS_IN_A_BYTE;
-        *curr_block = *curr_block | (1 << (BITS_IN_A_BYTE - bits->size % 8 - 1));
+        int8_t *curr_block = bits->data + bits->size / CHAR_BIT;
+        *curr_block = *curr_block | (1 << (CHAR_BIT - bits->size % 8 - 1));
     }
 
     (bits->size)++;
@@ -101,6 +100,6 @@ bitset_at
     size_t  index
 )
 {
-    int8_t *curr_block = bits->data + index / BITS_IN_A_BYTE;
-    return (*curr_block >> (BITS_IN_A_BYTE - index % BITS_IN_A_BYTE - 1)) & 1;
+    int8_t *curr_block = bits->data + index / CHAR_BIT;
+    return (*curr_block >> (CHAR_BIT - index % CHAR_BIT - 1)) & 1;
 }

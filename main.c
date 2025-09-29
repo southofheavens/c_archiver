@@ -2,26 +2,97 @@
 #include <stdint.h>
 #include <darray.h>
 #include <utils.h>
-#include <Huffman.h>
-#include <string.h>
-#include <stack.h>
-#include <stdlib.h>
-#include <dstring.h>
-#include <lz77.h>
-#include <archiver.h>
-#include <bitset.h>
-#include <assert.h>
+#include <limits.h>
+// #include <Huffman.h>
+// #include <string.h>
+// #include <stack.h>
+// #include <stdlib.h>
+// #include <dstring.h>
+// #include <lz77.h>
+// #include <archiver.h>
+// #include <bitset.h>
+// #include <assert.h>
+
+#define NPOS ULLONG_MAX
+
+size_t
+lz77_search_byte_seq_in_buffer
+(
+    const darray *buffer,
+    const darray *byte_seq
+)
+{
+    if (darray_size(buffer) < darray_size(byte_seq)) {
+        return NPOS;
+    }
+
+    size_t text_index = darray_size(buffer) - 1;
+    for (size_t i = 0; i < darray_size(buffer) - darray_size(byte_seq) + 1; ++i)
+    {
+        size_t curr_text_index = text_index;
+        size_t pattern_index = darray_size(byte_seq) - 1;
+        for (size_t j = 0; j < darray_size(byte_seq); ++j)
+        {
+            if (darray_at(buffer, curr_text_index, uint8_t) != 
+                darray_at(byte_seq, pattern_index, uint8_t)) 
+            {
+                break;
+            }
+            curr_text_index--;
+            pattern_index--;
+        }
+
+        if (pattern_index == NPOS) 
+        /** 
+         * После успешного сравнения переменная pattern_index, содержащая 0, после декремента
+         * переполнилась и стала содержать значение, которое равно NPOS
+         **/
+        {
+            return curr_text_index + 1;
+        } 
+
+        text_index--;
+    }
+
+    return NPOS;
+}
 
 int main(int argc, char *argv[])
-{
-    // dstring *some_str = dstring_create_c_str("In an age dominated by the relentless torrent of information, data, and non-fiction narratives that demand our attention for practical purposes, the act of reading fiction is often relegated to the status of a mere leisure activity, a pleasant but ultimately non-essential pastime. This perception, however, fundamentally underestimates the profound and unique power that fiction holds. Far from being an escape from reality, fiction is a vital tool for constructing a deeper, more nuanced, and more empathetic understanding of the world and our place within it. It builds an unseen architecture within our minds, shaping our capacity for thought and feeling in ways that no other medium can. The most immediate gift of fiction is its ability to foster empathy. When we open a novel, we are invited to step directly into the consciousness of another person. We are not merely observing their actions from the outside; we are granted access to their innermost thoughts, their secret fears, their unspoken desires, and their complex motivations. We journey alongside characters who may be vastly different from us in terms of culture, era, gender, or circumstance. This intimate immersion allows us to experience the world through their eyes. By feeling the anxiety of a young immigrant struggling to find a footing in a new country, or the moral dilemma of a leader facing an impossible choice, we are not just learning about these experiences intellectually; we are, in a very real sense, practicing them. This practice strengthens our neural pathways for compassion, teaching us that every person is the protagonist of their own complex story, a narrative rich with context that we, in our daily interactions, rarely see. Furthermore, fiction provides a safe and controlled environment for navigating the complexities of the human condition. Life does not come with a manual, and our personal experiences are inherently limited. Fiction expands our experiential library exponentially. Through stories, we can confront profound themes such as love, loss, betrayal, courage, and injustice without having to suffer the direct consequences. We can witness the devastating effects of prejudice in Harper Lee’s To Kill a Mockingbird or grapple with the nature of totalitarianism through George Orwell’s 1984. These narratives serve as moral and philosophical simulators, allowing us to test ideas, explore ethical boundaries, and develop our own value systems. They provide a vocabulary for emotions and situations we may not yet have encountered, equipping us with a framework for understanding when we eventually do. Moreover, fiction is a gymnasium for the cognitive muscles of the brain. Unlike the passive consumption of visual media, reading requires an active engagement. We must decode symbols (letters) into words, assemble those words into sentences, and construct the entire world from the author’s descriptions. Our minds are constantly at work, visualizing settings, inferring subtext, predicting plot developments, and retaining a web of character relationships. This complex mental activity enhances our concentration, improves our memory, and sharpens our critical thinking skills. It forces us to sit with ambiguity and complexity, to hold multiple possibilities in our mind at once, and to appreciate the subtlety of language itself. In conclusion, to dismiss fiction as unimportant is to ignore its role as a foundational builder of human intelligence and empathy. It is not a luxury, but a necessity. In a world that often prioritizes simplistic answers and stark divisions, fiction teaches us to appreciate the intricate shades of gray that define reality. It challenges our assumptions, broadens our perspectives, and connects us to the vast, timeless tapestry of human experience. By nurturing our ability to imagine the lives of others, fiction ultimately helps us to become more complete, more thoughtful, and more connected human beings. It is the quiet, steady hand that builds the unseen architecture of a wiser and more compassionate self.");
-    // dstring *some_stb = dstring_create_c_str("In an age dominated by the relentless torrent of information, data, and non-fiction narratives that demand our attention for practical purposes, the act of reading fiction is often relegated to the status of a mere leisure activity, a pleasant but ultimately non-essential pastime. This perception, however, fundamentally underestimates the profound and unique power that fiction holds. Far from being an escape from reality, fiction is a vital tool for constructing a deeper, more nuanced, and more empathetic understanding of the world and our place within it. It builds an unseen architecture within our minds, shaping our capacity for thought and feeling in ways that no other medium can. The most immediate gift of fiction is its ability to foster empathy. When we open a novel, we are invited to step directly into the consciousness of another person. We are not merely observing their actions from the outside; we are granted access to their innermost thoughts, their secret fears, their unspoken desires, and their complex motivations. We journey alongside characters who may be vastly different from us in terms of culture, era, gender, or circumstance. This intimate immersion allows us to experience the world through their eyes. By feeling the anxiety of a young immigrant struggling to find a footing in a new country, or the moral dilemma of a leader facing an impossible choice, we are not just learning about these experiences intellectually; we are, in a very real sense, practicing them. This practice strengthens our neural pathways for compassion, teaching us that every person is the protagonist of their own complex story, a narrative rich with context that we, in our daily interactions, rarely see. Furthermore, fiction provides a safe and controlled environment for navigating the complexities of the human condition. Life does not come with a manual, and our personal experiences are inherently limited. Fiction expands our experiential library exponentially. Through stories, we can confront profound themes such as love, loss, betrayal, courage, and injustice without having to suffer the direct consequences. We can witness the devastating effects of prejudice in Harper Lee’s To Kill a Mockingbird or grapple with the nature of totalitarianism through George Orwell’s 1984. These narratives serve as moral and philosophical simulators, allowing us to test ideas, explore ethical boundaries, and develop our own value systems. They provide a vocabulary for emotions and situations we may not yet have encountered, equipping us with a framework for understanding when we eventually do. Moreover, fiction is a gymnasium for the cognitive muscles of the brain. Unlike the passive consumption of visual media, reading requires an active engagement. We must decode symbols (letters) into words, assemble those words into sentences, and construct the entire world from the author’s descriptions. Our minds are constantly at work, visualizing settings, inferring subtext, predicting plot developments, and retaining a web of character relationships. This complex mental activity enhances our concentration, improves our memory, and sharpens our critical thinking skills. It forces us to sit with ambiguity and complexity, to hold multiple possibilities in our mind at once, and to appreciate the subtlety of language itself. In conclusion, to dismiss fiction as unimportant is to ignore its role as a foundational builder of human intelligence and empathy. It is not a luxury, but a necessity. In a world that often prioritizes simplistic answers and stark divisions, fiction teaches us to appreciate the intricate shades of gray that define reality. It challenges our assumptions, broadens our perspectives, and connects us to the vast, timeless tapestry of human experience. By nurturing our ability to imagine the lives of others, fiction ultimately helps us to become more complete, more thoughtful, and more connected human beings. It is the quiet, steady hand that builds the unseen architecture of a wiser and more compassionate self.");
-    dstring *some_str = dstring_create_c_str("Hello");
-    bitset *bits = compress(some_str);
+{   
+    darray *haystack = darray_create(sizeof(uint8_t));
+    uint8_t byte;
+    byte = 'a';
+    darray_append(haystack, byte);
+    byte = 'b';
+    darray_append(haystack, byte);
+    byte = 'r';
+    darray_append(haystack, byte);
+    byte = 'a';
+    darray_append(haystack, byte);
+    byte = 'c';
+    darray_append(haystack, byte);
+    byte = 'a';
+    darray_append(haystack, byte);
+    byte = 'd';
+    darray_append(haystack, byte);
+    byte = 'a';
+    darray_append(haystack, byte);
+    byte = 'b';
+    darray_append(haystack, byte);
+    byte = 'r';
+    darray_append(haystack, byte);
+    byte = 'a';
+    darray_append(haystack, byte);
 
-    dstring *unpacked = unpack(bits);
+    darray *needle = darray_create(sizeof(uint8_t));
+    byte = 'b';
+    darray_append(needle, byte);
+    byte = 'e';
+    darray_append(needle, byte);
 
-    printf("%s\n", dstring_get_c_str(unpacked));
+    size_t pos = lz77_search_byte_seq_in_buffer(haystack, needle);
+
+    printf("%lu\n",pos);
 
     return 0;
 }

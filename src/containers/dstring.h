@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <limits.h>
 
-#define DSTRING_NPOS SIZE_T_MAX
+#define DSTRING_NPOS ULONG_MAX // TODO переписать код с size_t на uint64_t
 
 typedef struct dstring dstring;
 

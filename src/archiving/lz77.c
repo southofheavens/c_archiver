@@ -2,12 +2,55 @@
 #include <memory.h>
 
 // #define BUFFER_SIZE 2048
+#define NPOS ULLONG_MAX
+
+size_t
+lz77_search_byte_seq_in_buffer
+(
+    const darray *buffer,
+    const darray *byte_seq
+)
+{
+    if (darray_size(buffer) < darray_size(byte_seq)) {
+        return NPOS;
+    }
+
+    size_t text_index = darray_size(buffer) - 1;
+    for (size_t i = 0; i < darray_size(buffer) - darray_size(byte_seq) + 1; ++i)
+    {
+        size_t curr_text_index = text_index;
+        size_t pattern_index = darray_size(byte_seq) - 1;
+        for (size_t j = 0; j < darray_size(byte_seq); ++j)
+        {
+            if (darray_at(buffer, curr_text_index, uint8_t) != 
+                darray_at(byte_seq, pattern_index, uint8_t)) 
+            {
+                break;
+            }
+            curr_text_index--;
+            pattern_index--;
+        }
+
+        if (pattern_index == NPOS) 
+        /** 
+         * После успешного сравнения переменная pattern_index, содержащая 0, после декремента
+         * переполнилась и стала содержать значение, которое равно NPOS
+         **/
+        {
+            return curr_text_index + 1;
+        } 
+
+        text_index--;
+    }
+
+    return NPOS;
+}
 
 lz77_token lz77_search_for_occurrence
 (
-    const dstring *buffer,
-    const dstring *str,
-    size_t        *index
+    const darray *buffer,
+    const darray *byte_seq,
+    size_t       *index
 )
 {
     lz77_token token;
@@ -17,35 +60,36 @@ lz77_token lz77_search_for_occurrence
     //size_t start_index = dstring_length((dstring *)buffer) < BUFFER_SIZE ? *index : BUFFER_SIZE + 1;
     size_t start_index = *index;
     // Текущая последовательность байт
-    dstring *curr_substr = dstring_create_empty();
-    // Индекс нахождения curr_substr в буфере
+    //dstring *curr_substr = dstring_create_empty();
+    darray *curr_byte_seq = darray_create(sizeof(uint8_t));
+    // Индекс нахождения curr_byte_seq в буфере
     size_t index_of_occurrence;
 
     size_t i = 0;
     do    
     {
-        char curr_char = dstring_at((dstring *)str, *index);
-        dstring_append(curr_substr, curr_char);
+        uint8_t curr_byte = darray_at(byte_seq, *index, uint8_t);
+        darray_append(curr_byte_seq, curr_byte);
 
         size_t index_of_curr_occur;
         if ((index_of_curr_occur = 
-            dstring_find_r((dstring *)buffer, curr_substr)) != DSTRING_NPOS)
+            lz77_search_byte_seq_in_buffer(buffer, curr_byte_seq)) != NPOS)
         {
             index_of_occurrence = index_of_curr_occur;
 
             token.shift = start_index - index_of_occurrence;
-            token.length = dstring_length(curr_substr);
+            token.length = darray_size(curr_byte_seq);
 
-            if (*index == dstring_length((dstring *)str) - 1) {
+            if (*index == darray_size(byte_seq) - 1) {
                 token.eom = true;
             }
-            else if (i == dstring_length((dstring *)buffer) - 1) {
-                token.letter = dstring_at((dstring *)str, ++(*index));
+            else if (i == darray_size(buffer) - 1) {
+                token.letter = darray_at(byte_seq, ++(*index), uint8_t);
             }
         }
         else 
         {
-            token.letter = curr_char;
+            token.letter = curr_byte;
             (*index)++;
             break;
         }
@@ -53,10 +97,12 @@ lz77_token lz77_search_for_occurrence
         (*index)++;
         i++;
     }
-    while (i < dstring_length((dstring *)buffer) 
-        && *index < dstring_length((dstring *)str));
+    while (i < darray_size(buffer) 
+        && *index < darray_size(byte_seq));
 
-    dstring_free(curr_substr);
+    darray_free(curr_byte_seq);
+
+    //TODO continue - закончил здесь, надо перепроверить функцию и продолжать переписывать на darray
 
     return token;
 }

@@ -6,8 +6,6 @@
 #include <stdlib.h>
 #include <errno.h>
 
-#define BITS_IN_A_BYTE 8
-
 bitset *
 serialize_token
 (
@@ -16,22 +14,22 @@ serialize_token
 {
     bitset *buffer = bitset_create();
 
-    for (int i = sizeof(uint16_t) * BITS_IN_A_BYTE - 1; i >= 0; --i)
+    for (int i = sizeof(uint16_t) * CHAR_BIT - 1; i >= 0; --i)
     {
         int bit = (tok.shift >> i) & 1;
         bitset_append(buffer, bit);
     }
-    for (int i = sizeof(uint16_t) * BITS_IN_A_BYTE - 1; i >= 0; --i)
+    for (int i = sizeof(uint16_t) * CHAR_BIT - 1; i >= 0; --i)
     {
         int bit = (tok.length >> i) & 1;
         bitset_append(buffer, bit);
     }
-    for (int i = sizeof(char) * BITS_IN_A_BYTE - 1; i >= 0; --i)
+    for (int i = sizeof(char) * CHAR_BIT - 1; i >= 0; --i)
     {
         int bit = (tok.letter >> i) & 1;
         bitset_append(buffer, bit);
     }
-    for (int i = sizeof(bool) * BITS_IN_A_BYTE - 2; i >= 0; --i)
+    for (int i = sizeof(bool) * CHAR_BIT - 2; i >= 0; --i)
     {
         bitset_append(buffer, 0);
     }
@@ -50,25 +48,25 @@ deserialize_token
     memset(&tok, 0, sizeof(tok));
 
     size_t j = 0;
-    for (int i = sizeof(uint16_t) * BITS_IN_A_BYTE - 1; i >= 0; --i)
+    for (int i = sizeof(uint16_t) * CHAR_BIT - 1; i >= 0; --i)
     {
         if (bitset_at(serialized_token, j++) == 1) {
             tok.shift += pow(2,i);
         }
     }
-    for (int i = sizeof(uint16_t) * BITS_IN_A_BYTE - 1; i >= 0; --i)
+    for (int i = sizeof(uint16_t) * CHAR_BIT - 1; i >= 0; --i)
     {
         if (bitset_at(serialized_token, j++) == 1) {
             tok.length += pow(2,i);
         }
     }
-    for (int i = sizeof(char) * BITS_IN_A_BYTE - 1; i >= 0; --i)
+    for (int i = sizeof(char) * CHAR_BIT - 1; i >= 0; --i)
     {
         if (bitset_at(serialized_token, j++) == 1) {
             tok.letter += pow(2,i);
         }
     }
-    for (int i = sizeof(bool) * BITS_IN_A_BYTE - 1; i >= 0; --i)
+    for (int i = sizeof(bool) * CHAR_BIT - 1; i >= 0; --i)
     {
         if (bitset_at(serialized_token, j++) == 1) {
             tok.eom += pow(2,i);
@@ -87,8 +85,8 @@ bitset_to_string
     const char *bits_data = (const char *)bitset_data(bits);
 
     char *bits_data_null_terminated = 
-        (char *)malloc((bitset_size(bits) / BITS_IN_A_BYTE) + 
-            (bitset_size(bits) % BITS_IN_A_BYTE == 0 ? 0 : 1) + sizeof(char));
+        (char *)malloc((bitset_size(bits) / CHAR_BIT) + 
+            (bitset_size(bits) % CHAR_BIT == 0 ? 0 : 1) + sizeof(char));
     if (bits_data_null_terminated == NULL)
     {
         fprintf(stderr, "%s\n", strerror(errno));
@@ -96,13 +94,13 @@ bitset_to_string
     }
 
     memcpy(bits_data_null_terminated, bits_data, 
-        (bitset_size(bits) / BITS_IN_A_BYTE) + (bitset_size(bits) % BITS_IN_A_BYTE == 0 ? 0 : 1));
+        (bitset_size(bits) / CHAR_BIT) + (bitset_size(bits) % CHAR_BIT == 0 ? 0 : 1));
 
     dstring *result = dstring_create_empty();
     for 
     (
         size_t i = 0; 
-        i < (bitset_size(bits) / BITS_IN_A_BYTE) + (bitset_size(bits) % BITS_IN_A_BYTE == 0 ? 0 : 1); 
+        i < (bitset_size(bits) / CHAR_BIT) + (bitset_size(bits) % CHAR_BIT == 0 ? 0 : 1); 
         ++i
     ) 
     {
@@ -126,7 +124,7 @@ string_to_bitset
     {
         char curr_char = dstring_at(dstr, i);
 
-        for (int j = BITS_IN_A_BYTE - 1; j >= 0; --j) {
+        for (int j = CHAR_BIT - 1; j >= 0; --j) {
             bitset_append(bits, (curr_char >> j) & 1);
         }
     }
