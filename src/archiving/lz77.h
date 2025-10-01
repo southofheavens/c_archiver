@@ -7,8 +7,8 @@
 
 typedef struct lz77_token
 {
-    uint32_t shift;
-    uint32_t length;
+    uint16_t shift;
+    uint16_t length;
     uint8_t     letter;
     bool     eom;
 } lz77_token;

@@ -58,11 +58,9 @@ lz77_token lz77_search_for_occurrence
     memset(&token, 0, sizeof(token));
 
     // Индекс начала текущей последовательности
-    size_t start_index = *index;
+    size_t start_index = darray_size((darray *)buffer) < BUFFER_SIZE ? *index : BUFFER_SIZE;
     // Текущая последовательность байт
     darray *curr_byte_seq = darray_create(sizeof(uint8_t));
-    // Индекс нахождения curr_byte_seq в буфере
-    size_t index_of_occurrence;
 
     size_t i = 0;
     do    
@@ -70,12 +68,11 @@ lz77_token lz77_search_for_occurrence
         uint8_t curr_byte = darray_at((darray *)byte_seq, *index, uint8_t);
         darray_append(curr_byte_seq, curr_byte);
 
-        size_t index_of_curr_occur;
-        if ((index_of_curr_occur = 
+        // Индекс нахождения curr_byte_seq в буфере
+        size_t index_of_occurrence;
+        if ((index_of_occurrence = 
             lz77_search_byte_seq_in_buffer((darray *)buffer, curr_byte_seq)) != NPOS)
         {
-            index_of_occurrence = index_of_curr_occur;
-
             token.shift = start_index - index_of_occurrence;
             token.length = darray_size(curr_byte_seq);
 
@@ -130,6 +127,17 @@ lz77_encode
         {
             uint8_t byte = darray_at(consecutive_bytes, j, uint8_t);
             darray_append(buffer, byte);
+        }
+
+        if (darray_size(buffer) > BUFFER_SIZE)
+        {
+            darray_iterator end = darray_end(buffer);
+            darray_iterator begin = end;
+            darray_iterator_advance(begin, BUFFER_SIZE, left);
+
+            darray *new_buffer = darray_create_iter(begin, end);
+            darray_free(buffer);
+            buffer = new_buffer;
         }
 
         darray_free(consecutive_bytes);
