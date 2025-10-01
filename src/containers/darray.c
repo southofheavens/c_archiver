@@ -140,6 +140,18 @@ _darray_at
     return pointer_to_elem;
 }
 
+void
+_darray_set
+(
+    darray *darr,
+    size_t  index,
+    void   *new_value 
+)
+{
+    void *dest = (void *)((char *)(darr->elems) + index * darr->type_size);
+    memcpy(dest, new_value, darr->type_size);
+}
+
 size_t 
 darray_size
 (
@@ -346,8 +358,8 @@ _darray_iterator_get_value
     return ((darray_iterator_impl *)(&it))->elem;   
 }
 
-int
-darray_iterator_compare
+long int // TODO пересмотреть вычитание, типо, если между итераторами очень большая разница
+darray_iterator_compare // то оно не поместится в long int 
 (
     const darray_iterator it1,
     const darray_iterator it2
@@ -357,7 +369,7 @@ darray_iterator_compare
     first_impl = *((darray_iterator_impl *)(&it1));
     second_impl = *((darray_iterator_impl *)(&it2));
 
-    return first_impl.elem - second_impl.elem;
+    return (char *)(first_impl.elem) - (char *)(second_impl.elem);
 }
 
 void

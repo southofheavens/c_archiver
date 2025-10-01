@@ -99,6 +99,19 @@ _darray_at
 );
 
 /**
+ * 
+ */
+#define darray_set(darr,index,elem) _darray_set(darr,index,&(elem))
+
+void
+_darray_set
+(
+    darray *darr,
+    size_t  index,
+    void   *new_value 
+);
+
+/**
  * Возвращает размер динамического массива
  * Принимает в качестве аргумента указатель на динамический массив
  */
@@ -224,7 +237,7 @@ _darray_iterator_get_value
  * - 0,  если итераторы указывают на один элемент
  * - положительное число, если it1 находится после it2
  */
-int
+long int
 darray_iterator_compare
 (
     const darray_iterator it1,

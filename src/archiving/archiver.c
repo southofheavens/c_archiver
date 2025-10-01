@@ -5,6 +5,7 @@
 #include <memory.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <limits.h>
 
 darray *
 serialize_token
@@ -12,9 +13,9 @@ serialize_token
     lz77_token tok
 )
 {
-    darray *buffer = darray_create(sizeof(int8_t));
+    darray *buffer = darray_create(sizeof(uint8_t));
 
-    int8_t curr_byte = 0;
+    uint8_t curr_byte = 0;
     uint8_t byte_index = 0;
     
     for (int i = sizeof(tok.shift) * CHAR_BIT - 1; i >= 0; --i)
@@ -78,48 +79,48 @@ deserialize_token
 
     uint8_t byte_index = 0;
     uint8_t serialized_token_index = 0;
-    int8_t curr_byte = darray_at(serialized_token, serialized_token_index, int8_t);
+    uint8_t curr_byte = darray_at(serialized_token, serialized_token_index, uint8_t);
 
     for (int i = sizeof(tok.shift) * CHAR_BIT - 1; i >= 0; --i)
     {
         bool bit = (curr_byte >> (CHAR_BIT - 1 - byte_index)) & 1;
         if (bit) {
-            tok.shift += pow(2,i);
+            tok.shift += (int)pow(2,i);
         }
 
         if (++byte_index == CHAR_BIT)
         {
             byte_index = 0;
             serialized_token_index++;
-            curr_byte = darray_at(serialized_token, serialized_token_index, int8_t);
+            curr_byte = darray_at(serialized_token, serialized_token_index, uint8_t);
         }
     }
     for (int i = sizeof(tok.length) * CHAR_BIT - 1; i >= 0; --i)
     {
         bool bit = (curr_byte >> (CHAR_BIT - 1 - byte_index)) & 1;
         if (bit) {
-            tok.length += pow(2,i);
+            tok.length += (int)pow(2,i);
         }
 
         if (++byte_index == CHAR_BIT)
         {
             byte_index = 0;
             serialized_token_index++;
-            curr_byte = darray_at(serialized_token, serialized_token_index, int8_t);
+            curr_byte = darray_at(serialized_token, serialized_token_index, uint8_t);
         }
     }
     for (int i = sizeof(tok.letter) * CHAR_BIT - 1; i >= 0; --i)
     {
         bool bit = (curr_byte >> (CHAR_BIT - 1 - byte_index)) & 1;
         if (bit) {
-            tok.letter += pow(2,i);
+            tok.letter += (int)pow(2,i);
         }
 
         if (++byte_index == CHAR_BIT)
         {
             byte_index = 0;
             serialized_token_index++;
-            curr_byte = darray_at(serialized_token, serialized_token_index, int8_t);
+            curr_byte = darray_at(serialized_token, serialized_token_index, uint8_t);
         }
     }
     if (curr_byte & 1) {
@@ -137,7 +138,7 @@ compress
 {
     darray *tokens = lz77_encode(bytes);
 
-    darray *serialized_tokens = darray_create(sizeof(int8_t));
+    darray *serialized_tokens = darray_create(sizeof(uint8_t));
 
     for (size_t i = 0; i < darray_size(tokens); ++i) 
     {
@@ -145,7 +146,7 @@ compress
         
         for (size_t j = 0; j < darray_size(serialized_token); ++j)
         {
-            int8_t byte = darray_at(serialized_token, j, int8_t);
+            uint8_t byte = darray_at(serialized_token, j, uint8_t);
             darray_append(serialized_tokens, byte);
         }
 
@@ -167,7 +168,7 @@ unpack
     bitset *bits
 )
 {
-    darray *serialized_tokens = huffman_tree_decode(bits);
+    darray *serialized_tokens = huffman_tree_decode(bits); // <- проблема тут
 
     darray *tokens = darray_create(sizeof(lz77_token));
 

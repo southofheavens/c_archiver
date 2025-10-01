@@ -1,7 +1,6 @@
 #ifndef __ARCHIVER_H__
 #define __ARCHIVER_H__
 
-#include <dstring.h>
 #include <darray.h>
 #include <bitset.h>
 

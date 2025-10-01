@@ -10,7 +10,7 @@
 
 typedef struct bitset
 {
-    int8_t *data;
+    uint8_t *data;
     size_t   size;
 } bitset;
 
@@ -27,7 +27,7 @@ bitset_create
         exit(1);
     }
 
-    bits->data = (int8_t *)malloc(sizeof(int8_t));
+    bits->data = (uint8_t *)malloc(sizeof(uint8_t));
     if (bits->data == NULL)
     {
         fprintf(stderr, "%s\n", strerror(errno));
@@ -58,24 +58,26 @@ bitset_append
 {
     if (bits->size != 0 && bits->size % CHAR_BIT == 0)
     {
-        bits->data = (int8_t *)realloc(bits->data, bits->size / CHAR_BIT + sizeof(int8_t));
+        bits->data = (uint8_t *)realloc(bits->data, bits->size / CHAR_BIT + sizeof(uint8_t));
         if (bits->data == NULL)
         {
             fprintf(stderr, "%s\n", strerror(errno));
             exit(1);
         }
+
+        bits->data[bits->size / CHAR_BIT] = 0;
     }
     
     if (bit)
     {
-        int8_t *curr_block = bits->data + bits->size / CHAR_BIT;
+        uint8_t *curr_block = bits->data + bits->size / CHAR_BIT;
         *curr_block = *curr_block | (1 << (CHAR_BIT - bits->size % 8 - 1));
     }
 
     (bits->size)++;
 }
 
-const int8_t *
+const uint8_t *
 bitset_data
 (
     bitset *bits
@@ -100,6 +102,6 @@ bitset_at
     size_t  index
 )
 {
-    int8_t *curr_block = bits->data + index / CHAR_BIT;
+    uint8_t *curr_block = bits->data + index / CHAR_BIT;
     return (*curr_block >> (CHAR_BIT - index % CHAR_BIT - 1)) & 1;
 }

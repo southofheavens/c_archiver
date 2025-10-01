@@ -1,7 +1,9 @@
 #include <lz77.h>
 #include <memory.h>
+#include <limits.h>
 
-#define NPOS ULLONG_MAX
+#define NPOS        ULLONG_MAX
+#define BUFFER_SIZE 2048
 
 size_t
 lz77_search_byte_seq_in_buffer
@@ -124,9 +126,9 @@ lz77_encode
         darray_iterator_advance(end, another_token.length + 1, right);
         darray *consecutive_bytes = darray_create_iter(begin, end);
         
-        for (size_t i = 0; i < darray_size(consecutive_bytes); ++i)
+        for (size_t j = 0; j < darray_size(consecutive_bytes); ++j)
         {
-            uint8_t byte = darray_at(consecutive_bytes, i, uint8_t);
+            uint8_t byte = darray_at(consecutive_bytes, j, uint8_t);
             darray_append(buffer, byte);
         }
 
@@ -158,9 +160,9 @@ lz77_decode
             darray_append(consecutive_bytes, tok.letter);
         }
 
-        for (size_t i = 0; i < darray_size(consecutive_bytes); ++i)
+        for (size_t j = 0; j < darray_size(consecutive_bytes); ++j)
         {
-            uint8_t curr_byte = darray_at(consecutive_bytes, i, uint8_t);
+            uint8_t curr_byte = darray_at(consecutive_bytes, j, uint8_t);
             darray_append(result, curr_byte);
         }
         darray_free(consecutive_bytes);

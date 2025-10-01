@@ -2,7 +2,6 @@
 #define __HUFFMAN_H__
 
 #include <darray.h>
-#include <dstring.h>
 #include <bitset.h>
 
 /**

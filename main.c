@@ -20,7 +20,7 @@
 int main(int argc, char *argv[])
 {   
     printf("ИСХОДНЫЙ ТЕКСТ:\n\n");
-    darray *darr = darray_create(sizeof(int8_t));
+    darray *darr = darray_create(sizeof(uint8_t));
 
     int8_t c;
     while ((c = getchar()) != EOF)
@@ -34,11 +34,17 @@ int main(int argc, char *argv[])
 
     printf("\n\nРАЗМЕР ТЕКСТА В БИТАХ: %lu\n\n", darray_size(darr) * CHAR_BIT);
 
+    bool fine = true;
     printf("\n\nРАЗЖАТЫЙ ТЕКСТ:\n");
-    for (size_t i = 0; i < darray_size(d); ++i)
+    for (size_t i = 0; i < darray_size(darr); ++i)
     {
-        printf("%c", darray_at(d,i,char));
+        printf("%c",darray_at(d,i,uint8_t));
+        if (darray_at(darr,i,uint8_t) != darray_at(d,i,uint8_t)) {
+            fine = false;
+        }
     }
+
+    printf("\n\nresult - %d\n", fine);
 
     printf("\n\nРАЗМЕР ТЕКСТА В БИТАХ: %lu\n\n", bitset_size(bits));
 
@@ -48,10 +54,6 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-// написать функцию чтобы можно было сделать как в плюсах vec[index] = new_value;
 // функцию, которая сдвигает итератор и возвращает сдвинутый итератор
 
-// когда мы идём к отцу, нужно после каждого увеличения frequency сравнивать соседние элементы
-
-// ну крч в хаффмане неправильная вставка в дерево происходит - узлы неправильно отсортированы, надо пересматривать решение
-
+// на больших текстах приходит пизда, возможно, пора встраивать буфер размером 2 кб

@@ -1,2 +1,2 @@
 all:
-	gcc -std=c11 -g -Isrc -Isrc/archiving -Isrc/containers src/containers/darray.c src/containers/dstring.c src/containers/stack.c src/containers/bitset.c src/archiving/Huffman.c src/archiving/lz77.c src/archiving/archiver.c src/utils.c -lm main.c -o main
+	clang -std=c11 -g -Isrc -Isrc/archiving -Isrc/containers src/containers/darray.c src/containers/dstring.c src/containers/stack.c src/containers/bitset.c src/archiving/Huffman.c src/archiving/lz77.c src/archiving/archiver.c src/utils.c -lm main.c -o main

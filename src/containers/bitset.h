@@ -38,7 +38,7 @@ bitset_append
 /**
  * 
  */
-const int8_t *
+const uint8_t *
 bitset_data
 (
     bitset *bits
