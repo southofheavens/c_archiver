@@ -51,6 +51,16 @@ darray_create
 );
 
 /**
+ * 
+ */
+darray *
+darray_create_iter
+(
+    darray_iterator begin,
+    darray_iterator end
+);
+
+/**
  * Освобождает ресурсы, занятые динамическим массивом
  * Принимает в качестве аргумента указатель на динамический массив
  */
@@ -231,6 +241,17 @@ _darray_iterator_swap
 (
     darray_iterator *it1,
     darray_iterator *it2
+);
+
+/**
+ * 
+ */
+#define darray_data(darr, type) ((type *)(_darray_data(darr)))
+
+void *
+_darray_data
+(
+    darray *darr
 );
 
 #endif

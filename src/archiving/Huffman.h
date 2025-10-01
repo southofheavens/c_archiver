@@ -11,13 +11,13 @@
 bitset *
 huffman_tree_encode
 (
-    const dstring *bytes
+    const darray *bytes
 );
 
 /**
  * Декодирует последовательность бит BITS и возвращает последовательность байт 
  */
-dstring *
+darray *
 huffman_tree_decode
 (
     const bitset *bits

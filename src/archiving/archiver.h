@@ -8,19 +8,11 @@
 bitset *
 compress
 (
-    dstring *bytes
+    darray *bytes
 );
 
-dstring *
+darray *
 unpack
-(
-    bitset *bits
-);
-
-// нужно убрать из этого файла
-
-dstring *
-bitset_to_string
 (
     bitset *bits
 );

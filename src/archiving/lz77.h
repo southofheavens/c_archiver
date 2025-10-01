@@ -17,10 +17,10 @@ typedef struct lz77_token
 darray *
 lz77_encode
 (
-    const dstring *str
+    const darray *byte_seq 
 );
 
-dstring *
+darray *
 lz77_decode
 (
     const darray *tokens

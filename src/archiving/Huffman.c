@@ -61,7 +61,7 @@ huffman_tree_node_create
         .left_child    = NULL,
         .right_child   = NULL,
         .frequency     = 1,
-        .letter        = '\0',
+        .letter        = 0,
         .is_fictitious = true
     };
 
@@ -77,7 +77,8 @@ huffman_tree_node_compare
 {
     huffman_tree_node *first_node = *((huffman_tree_node **)first);
     huffman_tree_node *second_node = *((huffman_tree_node **)second);
-    return (first_node->letter == second_node->letter ? 0 : 1);
+    return ((first_node->letter == second_node->letter) &&
+        (first_node->is_fictitious == second_node->is_fictitious) ? 0 : 1);
 }   
 
 
@@ -146,7 +147,109 @@ huffman_tree_get_code_of_letter
     return code;
 }
 
+// darray_iterator
+// huffman_tree_swap_two_nodes
+// (
+//     huffman_tree    *tree,
+//     darray_iterator  it1,
+//     darray_iterator  it2
+// )
+// {
+//     huffman_tree_node *it1_value, *it2_value;
+//     it1_value = darray_iterator_get_value(it1, huffman_tree_node *);
+//     it2_value = darray_iterator_get_value(it2, huffman_tree_node *);
+//     while ((darray_iterator_compare(it1, darray_begin(tree->nodes)) != 0)
+//         && (it1_value->frequency < it2_value->frequency))
+//     {
+//         darray_iterator_advance(it1, 1, left);
+//         it1_value = darray_iterator_get_value(it1, huffman_tree_node *);
+//     }
+
+//     darray_iterator replacement;
+//     replacement = it1;
+//     darray_iterator_advance(replacement, 1, right);
+
+//     huffman_tree_node *replacement_parent = darray_iterator_get_value(replacement, huffman_tree_node *)->parent;
+//     huffman_tree_node *start_el_parent = darray_iterator_get_value(it2, huffman_tree_node *)->parent;
+
+//     if (replacement_parent->right_child == darray_iterator_get_value(replacement, huffman_tree_node *)) {
+//         replacement_parent->right_child = darray_iterator_get_value(it2, huffman_tree_node *);
+//     }
+//     else {
+//         replacement_parent->left_child = darray_iterator_get_value(it2, huffman_tree_node *);
+//     }
+
+//     if (start_el_parent->right_child == darray_iterator_get_value(it2, huffman_tree_node *)) {
+//         start_el_parent->right_child = darray_iterator_get_value(replacement, huffman_tree_node *);
+//     }
+//     else {
+//         start_el_parent->left_child = darray_iterator_get_value(replacement, huffman_tree_node *);
+//     }
+
+//     darray_iterator_get_value(replacement, huffman_tree_node *)->parent = start_el_parent;
+//     darray_iterator_get_value(it2, huffman_tree_node *)->parent = replacement_parent;
+
+//     darray_iterator_swap(replacement, it2); 
+
+//     return replacement;
+// }
+
+// void 
+// huffman_tree_restore_properties_of_tree
+// (
+//     huffman_tree    *tree,
+//     darray_iterator  start_el
+// )   
+// {
+//     darray_iterator_get_value(start_el, huffman_tree_node *)->frequency++;
+
+//     if (darray_iterator_compare(start_el, darray_begin(tree->nodes)) == 0) {
+//         return;
+//     }
+    
+//     darray_iterator curr_el;
+//     curr_el = start_el;
+//     darray_iterator_advance(curr_el, 1, left);
+
+//     huffman_tree_node *start_el_value, *curr_el_value;
+//     start_el_value = darray_iterator_get_value(start_el, huffman_tree_node *);
+//     curr_el_value = darray_iterator_get_value(curr_el, huffman_tree_node *);
+
+//     huffman_tree_node *beggining_of_ascent;
+//     beggining_of_ascent = darray_iterator_get_value(start_el, huffman_tree_node *);
+//     if (curr_el_value->frequency < start_el_value->frequency)
+//     {
+//         darray_iterator new_start_el = huffman_tree_swap_two_nodes(tree, curr_el, start_el);
+
+//         beggining_of_ascent = darray_iterator_get_value(new_start_el, huffman_tree_node *)->parent;
+//         beggining_of_ascent->frequency++;
+//     }
+
+//     // возможно, тут всё упадёт, потому что в коде на плюсах не предусматривается проверка на null
+//     while (beggining_of_ascent->parent != NULL)
+//     {
+//         beggining_of_ascent = beggining_of_ascent->parent;
+//         beggining_of_ascent->frequency++;
+//     }
+// }
+
 darray_iterator
+huffman_tree_get_parent_by_son
+(
+    darray_iterator son
+)
+{
+    huffman_tree_node *parent_node = 
+        darray_iterator_get_value(son, huffman_tree_node *)->parent;
+
+    darray_iterator may_be_parent = son;
+    while (darray_iterator_get_value(may_be_parent, huffman_tree_node *) != parent_node) {
+        darray_iterator_advance(may_be_parent, 1, left);
+    }
+    return may_be_parent;
+}
+
+void
 huffman_tree_swap_two_nodes
 (
     huffman_tree    *tree,
@@ -154,24 +257,10 @@ huffman_tree_swap_two_nodes
     darray_iterator  it2
 )
 {
-    huffman_tree_node *it1_value, *it2_value;
-    it1_value = darray_iterator_get_value(it1, huffman_tree_node *);
-    it2_value = darray_iterator_get_value(it2, huffman_tree_node *);
-    while ((darray_iterator_compare(it1, darray_begin(tree->nodes)) != 0)
-        && (it1_value->frequency < it2_value->frequency))
-    {
-        darray_iterator_advance(it1, 1, left);
-        it1_value = darray_iterator_get_value(it1, huffman_tree_node *);
-    }
-
-    darray_iterator replacement;
-    replacement = it1;
-    darray_iterator_advance(replacement, 1, right);
-
-    huffman_tree_node *replacement_parent = darray_iterator_get_value(replacement, huffman_tree_node *)->parent;
+    huffman_tree_node *replacement_parent = darray_iterator_get_value(it1, huffman_tree_node *)->parent;
     huffman_tree_node *start_el_parent = darray_iterator_get_value(it2, huffman_tree_node *)->parent;
 
-    if (replacement_parent->right_child == darray_iterator_get_value(replacement, huffman_tree_node *)) {
+    if (replacement_parent->right_child == darray_iterator_get_value(it1, huffman_tree_node *)) {
         replacement_parent->right_child = darray_iterator_get_value(it2, huffman_tree_node *);
     }
     else {
@@ -179,33 +268,25 @@ huffman_tree_swap_two_nodes
     }
 
     if (start_el_parent->right_child == darray_iterator_get_value(it2, huffman_tree_node *)) {
-        start_el_parent->right_child = darray_iterator_get_value(replacement, huffman_tree_node *);
+        start_el_parent->right_child = darray_iterator_get_value(it1, huffman_tree_node *);
     }
     else {
-        start_el_parent->left_child = darray_iterator_get_value(replacement, huffman_tree_node *);
+        start_el_parent->left_child = darray_iterator_get_value(it1, huffman_tree_node *);
     }
 
-    darray_iterator_get_value(replacement, huffman_tree_node *)->parent = start_el_parent;
+    darray_iterator_get_value(it1, huffman_tree_node *)->parent = start_el_parent;
     darray_iterator_get_value(it2, huffman_tree_node *)->parent = replacement_parent;
 
-    darray_iterator_swap(replacement, it2); // проблема здесь. в векторе tree->nodes не происходит замены
-
-    return replacement;
+    darray_iterator_swap(it1, it2); 
 }
 
-void 
-huffman_tree_restore_properties_of_tree
+darray_iterator
+huffman_tree_looking_for_replacement
 (
-    huffman_tree    *tree,
+    huffman_tree    *tree,  
     darray_iterator  start_el
-)   
+)
 {
-    darray_iterator_get_value(start_el, huffman_tree_node *)->frequency++;
-
-    if (darray_iterator_compare(start_el, darray_begin(tree->nodes)) == 0) {
-        return;
-    }
-    
     darray_iterator curr_el;
     curr_el = start_el;
     darray_iterator_advance(curr_el, 1, left);
@@ -214,25 +295,54 @@ huffman_tree_restore_properties_of_tree
     start_el_value = darray_iterator_get_value(start_el, huffman_tree_node *);
     curr_el_value = darray_iterator_get_value(curr_el, huffman_tree_node *);
 
-    // TODO думаю всю эту логику вынести в отдельную функцию
-    // и название swap_two_nodes звучит немного не очень как будто бы
-
-    huffman_tree_node *beggining_of_ascent;
-    beggining_of_ascent = darray_iterator_get_value(start_el, huffman_tree_node *);
-    if (curr_el_value->frequency < start_el_value->frequency)
+    while ((darray_iterator_compare(curr_el, darray_begin(tree->nodes)) != 0)
+        && (curr_el_value->frequency < start_el_value->frequency))
     {
-        darray_iterator new_start_el = huffman_tree_swap_two_nodes(tree, curr_el, start_el);
-        beggining_of_ascent = darray_iterator_get_value(new_start_el, huffman_tree_node *)->parent;
-        beggining_of_ascent->frequency++;
+        darray_iterator_advance(curr_el, 1, left);
+        curr_el_value = darray_iterator_get_value(curr_el, huffman_tree_node *);
     }
 
-    // возможно, тут всё упадёт, потому что в коде на плюсах не предусматривается проверка на null
-    while (beggining_of_ascent->parent != NULL)
-    {
-        beggining_of_ascent = beggining_of_ascent->parent;
-        beggining_of_ascent->frequency++;
-    }
+    darray_iterator_advance(curr_el, 1, right);
+    return curr_el;
 }
+
+void
+huffman_tree_restore_properties_of_tree
+(
+    huffman_tree    *tree,
+    darray_iterator  start_el
+)
+{
+    while (darray_iterator_compare(start_el, darray_begin(tree->nodes)) != 0)
+    {
+        darray_iterator_get_value(start_el, huffman_tree_node *)->frequency++;
+
+        darray_iterator may_be_replacement = 
+            huffman_tree_looking_for_replacement(tree, start_el);
+        huffman_tree_node *mbr = darray_iterator_get_value(may_be_replacement, huffman_tree_node *);
+        if (darray_iterator_compare(may_be_replacement, start_el) != 0)
+        /* Замена была найдена, значит, необходимо менять узлы местами */
+        {
+            huffman_tree_swap_two_nodes(tree, may_be_replacement, start_el);
+            start_el = huffman_tree_get_parent_by_son(may_be_replacement);
+            huffman_tree_node *se = darray_iterator_get_value(may_be_replacement, huffman_tree_node *);
+        }
+        else
+        {
+            start_el = huffman_tree_get_parent_by_son(start_el);
+        }
+    }
+
+    darray_iterator_get_value(start_el, huffman_tree_node *)->frequency++;   
+}
+
+// 1. запускаем функцию от узла
+// 2. увеличиваем частоту на 1
+// 3. сравниваем частоту данного элемента и элемента, который находится слева от него
+// 4. если частота элемента, который слева, меньше частоты данного элемента, то находим 
+// элемент для обмена и меняем их местами (переподвешиваем деревья)
+// 4.1. шаг 1 для отца узла, с которым поменяли 
+// 5. если нет, то запускаем функцию от отца
 
 darray *
 huffman_tree_convert_letter_to_bits
@@ -271,7 +381,6 @@ huffman_tree_convert_bits_to_letter
     return letter;
 }
 
-// TODO переписать на битсет
 darray *
 huffman_tree_insert
 (
@@ -279,10 +388,12 @@ huffman_tree_insert
     char          letter
 )
 {
+    //int d = letter;
     darray *bits;
 
-    huffman_tree_node *new_node = huffman_tree_node_create();
+    huffman_tree_node *new_node = huffman_tree_node_create(); 
     new_node->letter = letter;
+    new_node->is_fictitious = false;
 
     darray_iterator find_res = darray_find(tree->nodes, new_node, huffman_tree_node_compare);
 
@@ -305,13 +416,12 @@ huffman_tree_insert
         (
             darray_iterator it = darray_begin(bits_of_letter);
             darray_iterator_compare(it, darray_end(bits_of_letter)) != 0;
-            darray_iterator_advance(it, right, 1)
+            darray_iterator_advance(it, 1, right)
         )
         {
             darray_append(bits, darray_iterator_get_value(it, bool));
         }
 
-        new_node->is_fictitious = false;
         new_node->parent = darray_at(tree->nodes, darray_size(tree->nodes) - 1, huffman_tree_node *);
         new_node->parent->left_child = new_node;
         darray_append(tree->nodes, new_node);
@@ -327,37 +437,29 @@ huffman_tree_insert
         huffman_tree_restore_properties_of_tree(tree, beggining_of_ascent);
     }
 
-    for (size_t i = 0; i < darray_size(tree->nodes); ++i)
-    {
-        int b = 5;
-        huffman_tree_node *node = darray_at(tree->nodes, i, huffman_tree_node *);
-        huffman_tree_node *node2 = darray_at(tree->nodes, i, huffman_tree_node *);
-        int a = 5;
-    }
-
     return bits;
 }
 
 bitset *
 huffman_tree_encode
 (
-    const dstring *bytes
+    const darray *bytes
 )
 {
     huffman_tree *tree = huffman_tree_create();
 
     bitset *result = bitset_create();
 
-    for (size_t i = 0; i < dstring_length((dstring *)bytes); ++i)
+    for (size_t i = 0; i < darray_size((darray *)bytes); ++i)
     {
-        darray *code = huffman_tree_insert(tree, dstring_at((dstring *)bytes, i));
+        darray *code = huffman_tree_insert(tree, darray_at((darray *)bytes, i, uint8_t));
 
         // TODO переписать на итераторы 
         for
         (
             darray_iterator it = darray_begin(code);
             darray_iterator_compare(it, darray_end(code)) != 0;
-            darray_iterator_advance(it, right, 1)
+            darray_iterator_advance(it, 1, right)
         )
         {
             bool curr_bit = darray_iterator_get_value(it, bool);
@@ -390,7 +492,7 @@ huffman_tree_get_son_by_parent
     return parent;
 }
 
-dstring *
+darray *
 huffman_tree_decode
 (
     const bitset *bits
@@ -398,13 +500,11 @@ huffman_tree_decode
 {
     huffman_tree *tree = huffman_tree_create();
 
-    dstring *result = dstring_create_empty();
+    darray *result = darray_create(sizeof(int8_t));
 
     darray_iterator nodes_it = darray_begin(tree->nodes);
-    darray_iterator code_it = darray_begin((darray *)bits);
 
     for (size_t i = 0; i < bitset_size((bitset *)bits); )
-    //while (darray_iterator_compare(code_it, darray_end((darray *)bits)) != 0)
     {
         huffman_tree_node *nodes_it_value = darray_iterator_get_value(nodes_it, huffman_tree_node *);
         if (nodes_it_value->left_child == NULL && nodes_it_value->right_child == NULL)
@@ -416,19 +516,16 @@ huffman_tree_decode
                 darray *code_of_letter = darray_create(sizeof(bool));
                 darray_reserve(code_of_letter, BITS_IN_BYTE);
 
-                for (size_t i = 0; i < BITS_IN_BYTE; ++i)
+                for (size_t j = 0; j < BITS_IN_BYTE; ++j)
                 {
                     bool bit = bitset_at((bitset *)bits, i);
                     darray_append(code_of_letter, bit);
                     ++i;
                 }
 
-                // if (code_it > code.end()) {
-                //     throw std::runtime_error("Невалидный код");
-                // }
-
                 char letter = huffman_tree_convert_bits_to_letter(code_of_letter);
-                dstring_append(result, letter);
+
+                darray_append(result, letter);
 
                 huffman_tree_insert(tree, letter);
             }
@@ -437,7 +534,7 @@ huffman_tree_decode
             {
                 char letter = darray_iterator_get_value(nodes_it, huffman_tree_node *)->letter;
 
-                dstring_append(result, letter);
+                darray_append(result, letter);
 
                 huffman_tree_insert(tree, letter);
             }
@@ -446,17 +543,16 @@ huffman_tree_decode
         }
         else
         {
-            nodes_it = huffman_tree_get_son_by_parent(nodes_it, darray_iterator_get_value(code_it, bool));
+            nodes_it = huffman_tree_get_son_by_parent(nodes_it, bitset_at((bitset *)bits,i));
             ++i;
         }
     }
 
-    if (darray_iterator_get_value(nodes_it, huffman_tree_node *)->is_fictitious == false) {
-        dstring_append(result, darray_iterator_get_value(nodes_it, huffman_tree_node *)->letter);
+    if (darray_iterator_get_value(nodes_it, huffman_tree_node *)->is_fictitious == false) 
+    {
+        char let = darray_iterator_get_value(nodes_it, huffman_tree_node *)->letter;
+        darray_append(result, let);
     }
-    // else if (nodes_it != nodes_.begin()) {
-    //     throw std::runtime_error("Невалидный код");
-    // }
 
     return result;
 }

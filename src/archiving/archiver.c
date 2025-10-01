@@ -6,34 +6,63 @@
 #include <stdlib.h>
 #include <errno.h>
 
-bitset *
+darray *
 serialize_token
 (
     lz77_token tok
 )
 {
-    bitset *buffer = bitset_create();
+    darray *buffer = darray_create(sizeof(int8_t));
 
-    for (int i = sizeof(uint16_t) * CHAR_BIT - 1; i >= 0; --i)
+    int8_t curr_byte = 0;
+    uint8_t byte_index = 0;
+    
+    for (int i = sizeof(tok.shift) * CHAR_BIT - 1; i >= 0; --i)
     {
-        int bit = (tok.shift >> i) & 1;
-        bitset_append(buffer, bit);
+        bool bit = (tok.shift >> i) & 1;
+        if (bit) {
+            curr_byte |= (1 << (CHAR_BIT - 1 - byte_index));
+        }
+        
+        if (++byte_index == CHAR_BIT)
+        {
+            darray_append(buffer, curr_byte);
+            byte_index = 0;
+            curr_byte = 0;
+        }
     }
-    for (int i = sizeof(uint16_t) * CHAR_BIT - 1; i >= 0; --i)
+    for (int i = sizeof(tok.length) * CHAR_BIT - 1; i >= 0; --i)
     {
-        int bit = (tok.length >> i) & 1;
-        bitset_append(buffer, bit);
+        bool bit = (tok.length >> i) & 1;
+        if (bit) {
+            curr_byte |= (1 << (CHAR_BIT - 1 - byte_index));
+        }
+        
+        if (++byte_index == CHAR_BIT)
+        {
+            darray_append(buffer, curr_byte);
+            byte_index = 0;
+            curr_byte = 0;
+        }
     }
-    for (int i = sizeof(char) * CHAR_BIT - 1; i >= 0; --i)
+    for (int i = sizeof(tok.letter) * CHAR_BIT - 1; i >= 0; --i)
     {
-        int bit = (tok.letter >> i) & 1;
-        bitset_append(buffer, bit);
+        bool bit = (tok.letter >> i) & 1;
+        if (bit) {
+            curr_byte |= (1 << (CHAR_BIT - 1 - byte_index));
+        }
+        
+        if (++byte_index == CHAR_BIT)
+        {
+            darray_append(buffer, curr_byte);
+            byte_index = 0;
+            curr_byte = 0;
+        }
     }
-    for (int i = sizeof(bool) * CHAR_BIT - 2; i >= 0; --i)
-    {
-        bitset_append(buffer, 0);
+    if (tok.eom) {
+        curr_byte |= 1;
     }
-    bitset_append(buffer, (tok.eom & 1) == 1 ? 1 : 0);
+    darray_append(buffer, curr_byte);
 
     return buffer;
 }
@@ -41,148 +70,124 @@ serialize_token
 lz77_token
 deserialize_token
 (
-    bitset *serialized_token
+    darray *serialized_token
 )
 {
     lz77_token tok;
     memset(&tok, 0, sizeof(tok));
 
-    size_t j = 0;
-    for (int i = sizeof(uint16_t) * CHAR_BIT - 1; i >= 0; --i)
+    uint8_t byte_index = 0;
+    uint8_t serialized_token_index = 0;
+    int8_t curr_byte = darray_at(serialized_token, serialized_token_index, int8_t);
+
+    for (int i = sizeof(tok.shift) * CHAR_BIT - 1; i >= 0; --i)
     {
-        if (bitset_at(serialized_token, j++) == 1) {
+        bool bit = (curr_byte >> (CHAR_BIT - 1 - byte_index)) & 1;
+        if (bit) {
             tok.shift += pow(2,i);
         }
+
+        if (++byte_index == CHAR_BIT)
+        {
+            byte_index = 0;
+            serialized_token_index++;
+            curr_byte = darray_at(serialized_token, serialized_token_index, int8_t);
+        }
     }
-    for (int i = sizeof(uint16_t) * CHAR_BIT - 1; i >= 0; --i)
+    for (int i = sizeof(tok.length) * CHAR_BIT - 1; i >= 0; --i)
     {
-        if (bitset_at(serialized_token, j++) == 1) {
+        bool bit = (curr_byte >> (CHAR_BIT - 1 - byte_index)) & 1;
+        if (bit) {
             tok.length += pow(2,i);
         }
+
+        if (++byte_index == CHAR_BIT)
+        {
+            byte_index = 0;
+            serialized_token_index++;
+            curr_byte = darray_at(serialized_token, serialized_token_index, int8_t);
+        }
     }
-    for (int i = sizeof(char) * CHAR_BIT - 1; i >= 0; --i)
+    for (int i = sizeof(tok.letter) * CHAR_BIT - 1; i >= 0; --i)
     {
-        if (bitset_at(serialized_token, j++) == 1) {
+        bool bit = (curr_byte >> (CHAR_BIT - 1 - byte_index)) & 1;
+        if (bit) {
             tok.letter += pow(2,i);
         }
-    }
-    for (int i = sizeof(bool) * CHAR_BIT - 1; i >= 0; --i)
-    {
-        if (bitset_at(serialized_token, j++) == 1) {
-            tok.eom += pow(2,i);
+
+        if (++byte_index == CHAR_BIT)
+        {
+            byte_index = 0;
+            serialized_token_index++;
+            curr_byte = darray_at(serialized_token, serialized_token_index, int8_t);
         }
+    }
+    if (curr_byte & 1) {
+        tok.eom = true;
     }
 
     return tok;
 }
 
-dstring *
-bitset_to_string
-(
-    bitset *bits
-)
-{
-    const char *bits_data = (const char *)bitset_data(bits);
-
-    char *bits_data_null_terminated = 
-        (char *)malloc((bitset_size(bits) / CHAR_BIT) + 
-            (bitset_size(bits) % CHAR_BIT == 0 ? 0 : 1) + sizeof(char));
-    if (bits_data_null_terminated == NULL)
-    {
-        fprintf(stderr, "%s\n", strerror(errno));
-        exit(1);
-    }
-
-    memcpy(bits_data_null_terminated, bits_data, 
-        (bitset_size(bits) / CHAR_BIT) + (bitset_size(bits) % CHAR_BIT == 0 ? 0 : 1));
-
-    dstring *result = dstring_create_empty();
-    for 
-    (
-        size_t i = 0; 
-        i < (bitset_size(bits) / CHAR_BIT) + (bitset_size(bits) % CHAR_BIT == 0 ? 0 : 1); 
-        ++i
-    ) 
-    {
-        dstring_append(result, bits_data_null_terminated[i]);
-    }
-
-    free(bits_data_null_terminated);
-
-    return result;
-}
-
-bitset *
-string_to_bitset
-(
-    dstring *dstr
-)
-{
-    bitset *bits = bitset_create();
-
-    for (size_t i = 0; i < dstring_length(dstr); ++i)
-    {
-        char curr_char = dstring_at(dstr, i);
-
-        for (int j = CHAR_BIT - 1; j >= 0; --j) {
-            bitset_append(bits, (curr_char >> j) & 1);
-        }
-    }
-    
-    return bits;
-}
-
 bitset *
 compress
 (
-    dstring *bytes
+    darray *bytes
 )
 {
     darray *tokens = lz77_encode(bytes);
 
-    dstring *serialized_tokens = dstring_create_empty(); // TODO переписать на битсет
+    darray *serialized_tokens = darray_create(sizeof(int8_t));
 
     for (size_t i = 0; i < darray_size(tokens); ++i) 
     {
-        bitset *serialized_token = serialize_token(darray_at(tokens, i, lz77_token));
-        dstring *string_serialized_token = bitset_to_string(serialized_token);
-        dstring_concat(serialized_tokens, string_serialized_token);  // проблема здесь в ебаных строках, копирование не происходит потому что strcat сразу спотыкается об \0
-        dstring_free(string_serialized_token);
-        bitset_free(serialized_token);
+        darray *serialized_token = serialize_token(darray_at(tokens, i, lz77_token));
+        
+        for (size_t j = 0; j < darray_size(serialized_token); ++j)
+        {
+            int8_t byte = darray_at(serialized_token, j, int8_t);
+            darray_append(serialized_tokens, byte);
+        }
+
+        darray_free(serialized_token);
     }
 
-    for (size_t i = 0; i < dstring_length(serialized_tokens); ++i)
-    {
-        printf("%c\n", dstring_at(serialized_tokens, i));
-    }
+    darray_free(tokens);
 
     bitset *result = huffman_tree_encode(serialized_tokens);
+
+    darray_free(serialized_tokens);
 
     return result;
 }
 
-dstring *
+darray *
 unpack
 (
     bitset *bits
 )
 {
-    dstring *string_serialized_tokens = huffman_tree_decode(bits);
+    darray *serialized_tokens = huffman_tree_decode(bits);
 
     darray *tokens = darray_create(sizeof(lz77_token));
 
-    for (size_t i = 0; i < dstring_length(string_serialized_tokens); i += 6)
+    for (size_t i = 0; i < darray_size(serialized_tokens); i += 6)
     {
-        dstring *serialized_token = dstring_substr(string_serialized_tokens, i,  
-            sizeof(lz77_token));
-        bitset *bits_of_serialized_token = string_to_bitset(serialized_token);
-        dstring_free(serialized_token);
-        lz77_token tok = deserialize_token(bits_of_serialized_token); 
-        bitset_free(bits_of_serialized_token);
+        darray_iterator begin = darray_begin(serialized_tokens);
+        darray_iterator_advance(begin, i, right);
+        darray_iterator end = begin;
+        darray_iterator_advance(end, sizeof(lz77_token), right);
+        darray *serialized_token_darr = darray_create_iter(begin,end);
+        lz77_token tok = deserialize_token(serialized_token_darr); 
+        darray_free(serialized_token_darr);
         darray_append(tokens, tok);
     }
 
-    dstring *result = lz77_decode(tokens);
+    darray_free(serialized_tokens);
+
+    darray *result = lz77_decode(tokens);
+
+    darray_free(tokens);
 
     return result;
 }

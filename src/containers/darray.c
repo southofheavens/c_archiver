@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <memory.h>
+#include <stddef.h>
 
 #define DARRAY_INIT_CAPACITY 8
 
@@ -46,6 +47,39 @@ darray_create
     darr->capacity = 0;
     darr->size = 0;
     darr->type_size = type_size;
+
+    return darr;
+}
+
+darray *
+darray_create_iter
+(
+    darray_iterator begin,
+    darray_iterator end
+)
+{
+    darray_iterator_impl begin_impl = *((darray_iterator_impl *)&begin);
+    darray_iterator_impl end_impl = *((darray_iterator_impl *)&end);
+
+    ptrdiff_t diff = ((char *)(end_impl.elem) - (char *)(begin_impl.elem)) / begin_impl.master_darr->type_size;
+
+    darray *darr = (darray *)malloc(sizeof(darray));
+    if (darr == NULL)
+    {
+        fprintf(stderr, "%s\n", strerror(errno));
+        exit(1);
+    }
+
+    darr->type_size = begin_impl.master_darr->type_size;
+    darr->size = darr->capacity = diff;
+    darr->elems = malloc(darr->capacity * darr->type_size);
+    if (darr->elems == NULL)
+    {
+        fprintf(stderr, "%s\n", strerror(errno));
+        exit(1);
+    }   
+
+    memcpy(darr->elems, begin_impl.elem, darr->capacity * darr->type_size);
 
     return darr;
 }
@@ -342,4 +376,13 @@ _darray_iterator_swap
     memcpy(temp, impl1->elem, type_size);
     memcpy(impl1->elem, impl2->elem, type_size);
     memcpy(impl2->elem, temp, type_size);
+}
+
+void *
+_darray_data
+(
+    darray *darr
+)
+{
+    return darr->elems;
 }
