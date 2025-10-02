@@ -3,7 +3,7 @@
 #include <limits.h>
 
 #define NPOS        ULLONG_MAX
-#define BUFFER_SIZE 4096
+#define BUFFER_SIZE (4 * 1024)
 
 size_t
 lz77_search_byte_seq_in_buffer
