@@ -17,6 +17,7 @@
 #include <bitset.h>
 #include <errno.h>
 #include <assert.h>
+#include <time.h>
 
 void
 compress_file
@@ -148,10 +149,35 @@ unpack_file
 
 int main(int argc, char *argv[])
 {   
-    compress_file("test", "encoded.sim");
-    unpack_file("encoded.sim", "decoded");
+    clock_t start_time = clock();
+
+    compress_file("test", "test.sim");
+    unpack_file("test.sim", "decoded");
+
+    clock_t end_time = clock();
+
+    printf("Время: %f\n", (double)(end_time - start_time) / CLOCKS_PER_SEC);
 
     return 0;
 }
 
 // функцию, которая сдвигает итератор и возвращает сдвинутый итератор
+
+// так было до момента, пока я не переписал функцию huffman_tree_get_parent_by_son
+// ./main
+// Исходный размер файла: 4509784 бит
+// Размер закодированной последовательности: 3195948 бит
+// Start: 5943, end: 7518707
+// Время: 7.512764
+
+// так стало, когда я переписал функцию huffman_tree_get_parent_by_son
+// semyonzhuravlev@MacBook-Air c_archiver % ./main
+// Исходный размер файла: 4509784 бит
+// Размер закодированной последовательности: 3195948 бит
+// Время: 7.189854
+
+// после использования set вместо линейного поиска...
+// semyonzhuravlev@MacBook-Air c_archiver % ./main
+// Исходный размер файла: 4509784 бит
+// Размер закодированной последовательности: 3195948 бит
+// Время: 7.191757

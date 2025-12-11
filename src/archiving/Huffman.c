@@ -19,18 +19,80 @@ struct huffman_tree_node
     huffman_tree_node *left_child;
     huffman_tree_node *right_child;
     size_t             frequency;
-    uint8_t               letter;
+    uint8_t            letter;
+    uint64_t           index_in_array;
     bool               is_fictitious;
 };
 
+/**
+ * Когда в дерево вставляется узел, может быть две ситуации:
+ * а) Узел уже есть в дереве.
+ * б) Узла в дереве нет. 
+ * 
+ * Чтобы каждый раз не пробегаться линейным поиском по huffman_tree->nodes,
+ * можно сделать ограниченный set на 2^8 элементов, где 8 - размер uint8_t в битах
+ */
+
+#define BITS_IN_BYTE     8
+#define UINT8_T_CAPACITY 256
+typedef struct limited_set 
+{
+    uint8_t bits[UINT8_T_CAPACITY / BITS_IN_BYTE];
+} limited_set;
+
 typedef struct _huffman_tree
 {
-    darray *nodes;
+    darray      *nodes;
+    limited_set *lset; // в деструкторе освободить память
 } huffman_tree;
-
 
 /*  */
 
+limited_set *
+limited_set_create
+(
+    void
+)
+{
+    limited_set *lset = (limited_set *)malloc(sizeof(limited_set));
+    if (lset == NULL) 
+    {
+        perror("");
+        exit(1);
+    }
+    for (size_t i = 0; i < UINT8_T_CAPACITY / BITS_IN_BYTE; ++i) {
+        (lset->bits)[i] = 0;
+    }
+    return lset;
+}
+
+bool
+limited_set_lookup
+(
+    limited_set *lset,
+    uint8_t      letter
+)
+{
+    uint8_t necessary_byte = (lset->bits)[letter / BITS_IN_BYTE];
+    if (((necessary_byte >> (BITS_IN_BYTE - letter % BITS_IN_BYTE - 1)) & 1) == 1) {
+        return true;
+    }
+    return false;
+}
+
+void
+limited_set_insert
+(
+    limited_set *lset,
+    uint8_t      letter
+)
+{
+    uint8_t *pbits = lset->bits;
+    pbits += letter / BITS_IN_BYTE;
+    *pbits = *pbits | (1 << (BITS_IN_BYTE - letter % BITS_IN_BYTE - 1));
+}
+
+/*  */
 
 huffman_tree_node *
 huffman_tree_node_create
@@ -93,6 +155,8 @@ huffman_tree_create
     huffman_tree_node *art_node = huffman_tree_node_create();
 
     darray_append(tree->nodes, art_node);
+
+    tree->lset = limited_set_create();
 
     return tree;
 }
@@ -157,14 +221,10 @@ huffman_tree_get_parent_by_son
     darray_iterator son
 )
 {
-    huffman_tree_node *parent_node = 
-        darray_iterator_get_value(son, huffman_tree_node *)->parent;
-
-    darray_iterator may_be_parent = son;
-    while (darray_iterator_get_value(may_be_parent, huffman_tree_node *) != parent_node) {
-        darray_iterator_advance(may_be_parent, 1, left);
-    }
-    return may_be_parent;
+    huffman_tree_node *son_node = darray_iterator_get_value(son, huffman_tree_node *);
+    huffman_tree_node *parent_node = son_node->parent;
+    darray_iterator_advance(son, son_node->index_in_array - parent_node->index_in_array, left);
+    return son;
 }
 
 void
@@ -196,6 +256,11 @@ huffman_tree_swap_two_nodes
     darray_iterator_get_value(it2, huffman_tree_node *)->parent = replacement_parent;
 
     darray_iterator_swap(it1, it2); 
+
+    uint64_t temp_index = darray_iterator_get_value(it1, huffman_tree_node *)->index_in_array;
+    darray_iterator_get_value(it1, huffman_tree_node *)->index_in_array 
+        = darray_iterator_get_value(it2, huffman_tree_node *)->index_in_array;
+    darray_iterator_get_value(it2, huffman_tree_node *)->index_in_array = temp_index;
 }
 
 darray_iterator
@@ -293,26 +358,31 @@ darray *
 huffman_tree_insert
 (
     huffman_tree *tree,
-    uint8_t          letter
+    uint8_t       letter
 )
 {
     darray *bits;
 
+    /* TODO Выделять память лишний раз и освобождать ее в блоке на несколько строк ниже - так себе затея */
     huffman_tree_node *new_node = huffman_tree_node_create(); 
     new_node->letter = letter;
     new_node->is_fictitious = false;
 
-    darray_iterator find_res = darray_find(tree->nodes, new_node, huffman_tree_node_compare);
-
-    if (darray_iterator_compare(find_res, darray_end(tree->nodes)) != 0)
+    bool does_node_exist = limited_set_lookup(tree->lset, letter);
+    if (does_node_exist == true)
     {
+        darray_iterator find_res = darray_find(tree->nodes, new_node, huffman_tree_node_compare);
         free(new_node);
         bits = huffman_tree_get_code_of_letter(find_res);
         huffman_tree_restore_properties_of_tree(tree, find_res);
     }
     else
     {
-        darray_iterator art_node = find_res;
+        limited_set_insert(tree->lset, letter);
+        
+        new_node->index_in_array = darray_size(tree->nodes);
+
+        darray_iterator art_node = darray_end(tree->nodes);
         darray_iterator_advance(art_node, 1, left);
 
         bits = huffman_tree_get_code_of_letter(art_node);
@@ -336,6 +406,7 @@ huffman_tree_insert
         darray_append(tree->nodes, new_node);
 
         huffman_tree_node *fict_node = huffman_tree_node_create();
+        fict_node->index_in_array = darray_size(tree->nodes);
         fict_node->parent = darray_at(tree->nodes, darray_size(tree->nodes) - 2, huffman_tree_node *);
         fict_node->parent->right_child = fict_node;
         darray_append(tree->nodes, fict_node);
